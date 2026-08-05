@@ -1,0 +1,13 @@
+{
+  "name": "quasar-graph",
+  "owner": {
+    "name": "Oleksandr Samoilov"
+  },
+  "plugins": [
+    {
+      "name": "quasar-graph",
+      "source": "./",
+      "description": "Scan a directory of projects, build a quasar-graph manifest, and upload the resulting graph to the quasar-graph backend."
+    }
+  ]
+}

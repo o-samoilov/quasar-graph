@@ -1,0 +1,22 @@
+{
+  "name": "quasar-graph",
+  "version": "1.0.0",
+  "description": "Scan a directory of projects, build a quasar-graph manifest, and upload the resulting graph to the quasar-graph backend.",
+  "author": {
+    "name": "Oleksandr Samoilov",
+    "url": "https://github.com/o-samoilov"
+  },
+  "homepage": "https://quasar-graph.com",
+  "repository": "https://github.com/o-samoilov/quasar-graph",
+  "license": "MIT",
+  "keywords": ["architecture", "graph", "codebase-map", "scanner", "mcp"],
+  "mcpServers": {
+    "quasar-graph": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/dist/index.js"],
+      "env": {
+        "QUASAR_BACKEND_URL": "https://api.quasar-graph.com"
+      }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "session_id": "20260604-1200-abcdef",
+  "scan_dir": "/abs/projects",
+  "created_at": "2026-06-04T12:00:00Z",
+  "backend": {
+    "project_id": "p-1",
+    "project_name": "acme",
+    "graph_id": "g-existing",
+    "graph_name": "projects",
+    "mode": "existing"
+  },
+  "projects": [
+    { "name": "acme-backend", "path": "/abs/projects/acme-backend", "repo_url": "https://github.com/acme/acme-backend.git", "lang": "typescript", "framework": "nestjs", "status": "done" },
+    { "name": "acme-web", "path": "/abs/projects/acme-web", "lang": "typescript", "framework": "next", "status": "done" },
+    { "name": "skipped", "path": "/abs/projects/skipped", "lang": "go", "framework": "", "status": "pending" }
+  ]
+}
