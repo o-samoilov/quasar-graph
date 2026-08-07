@@ -33,7 +33,7 @@ async function main() {
   const client = createClient(config.backendUrl, { auth });
 
   const server = new McpServer(
-    { name: 'quasar-graph', version: '0.1.0' },
+    { name: 'quasar-graph', version: '1.0.0' },
     {
       instructions:
         'quasar-graph maintains a backend graph of the user\'s projects: project/service nodes plus their databases, caches, queues, gateways and third-party services, connected by dependency and ingress-route edges. ' +
