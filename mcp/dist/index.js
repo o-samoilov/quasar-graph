@@ -8040,7 +8040,7 @@ var require_omap = __commonJS({
     var _toString = Object.prototype.toString;
     function resolveYamlOmap(data) {
       if (data === null) return true;
-      const objectKeys = [];
+      const objectKeys = {};
       const object3 = data;
       for (let index = 0, length = object3.length; index < length; index += 1) {
         const pair = object3[index];
@@ -8054,8 +8054,8 @@ var require_omap = __commonJS({
           }
         }
         if (!pairHasKey) return false;
-        if (objectKeys.indexOf(pairKey) === -1) objectKeys.push(pairKey);
-        else return false;
+        if (_hasOwnProperty.call(objectKeys, pairKey)) return false;
+        Object.defineProperty(objectKeys, pairKey, { value: true });
       }
       return true;
     }
@@ -26245,7 +26245,7 @@ function requireOmap() {
   const _toString = Object.prototype.toString;
   function resolveYamlOmap(data) {
     if (data === null) return true;
-    const objectKeys = [];
+    const objectKeys = {};
     const object3 = data;
     for (let index = 0, length = object3.length; index < length; index += 1) {
       const pair = object3[index];
@@ -26259,8 +26259,8 @@ function requireOmap() {
         }
       }
       if (!pairHasKey) return false;
-      if (objectKeys.indexOf(pairKey) === -1) objectKeys.push(pairKey);
-      else return false;
+      if (_hasOwnProperty.call(objectKeys, pairKey)) return false;
+      Object.defineProperty(objectKeys, pairKey, { value: true });
     }
     return true;
   }
@@ -31142,7 +31142,7 @@ async function main() {
   const auth = createTokenProvider({ backendUrl: config2.backendUrl, store, oauthClient });
   const client = createClient(config2.backendUrl, { auth });
   const server = new McpServer(
-    { name: "quasar-graph", version: "0.1.0" },
+    { name: "quasar-graph", version: "1.0.0" },
     {
       instructions: `quasar-graph maintains a backend graph of the user's projects: project/service nodes plus their databases, caches, queues, gateways and third-party services, connected by dependency and ingress-route edges. When the user asks structural questions about the project they are working in \u2014 who calls this service, what does it depend on, which backend/services it talks to, where a database/cache/queue comes from, who consumes its API, what routes traffic to it \u2014 invoke the quasar-graph:context skill first (it binds the current project to its graph node once per session), then answer from the graph instead of searching code. Invoke it even when the repository's own docs (CLAUDE.md, README) seem to answer the question \u2014 the graph is the source of truth for cross-project structure. For questions across many projects' code use quasar-graph:research; to index projects into a graph use quasar-graph:scan; to clone a graph's projects locally use quasar-graph:clone; to edit an existing graph (positions, descriptions, nodes/edges) without re-scanning use quasar-graph:edit. Every tool except login requires authentication: on a "Not authenticated" error run the login tool, then retry.`
     }

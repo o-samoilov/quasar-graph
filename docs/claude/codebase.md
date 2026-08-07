@@ -19,7 +19,7 @@ The bundled MCP server (`mcp/index.js`, `mcp/src/`) exposes `login` / `whoami` /
 
 The scanner runs in these phases, all inside the `scan` skill:
 
-0. **Phase 0 — Backend binding** (`scan` orchestrator, main thread, via the bundled MCP server). Picks the target backend project (`list_projects`) and then **new or existing graph**: existing → `list_graphs project_id` + `pull_graph` (downloads `<session_dir>/graph/graph.json` — the full snapshot; no per-node buffer files); new → `create_graph`. Records `{project_id, project_name, graph_id, graph_name, mode}` in a top-level `backend` block in `manifest.json`. The graph is always the **logical + ingress overlay** model: dependency edges plus the gateway/ingress routing path as a separate `routes` edge class. The overlay is purely additive — it never removes or rewrites a logical edge — and there is no toggle for it. If the MCP server is unavailable, this phase is skipped (**offline mode**): the scan still runs and writes to disk, and Phase 4 is skipped.
+0. **Phase 0 — Backend binding** (`scan` orchestrator, main thread, via the bundled MCP server). Picks the target backend project (`list_projects`, with a `Create new project` option backed by `create_project` — the fallthrough when the list is empty) and then **new or existing graph**: existing → `list_graphs project_id` + `pull_graph` (downloads `<session_dir>/graph/graph.json` — the full snapshot; no per-node buffer files); new → `create_graph`. Records `{project_id, project_name, graph_id, graph_name, mode}` in a top-level `backend` block in `manifest.json`. The graph is always the **logical + ingress overlay** model: dependency edges plus the gateway/ingress routing path as a separate `routes` edge class. The overlay is purely additive — it never removes or rewrites a logical edge — and there is no toggle for it. If the MCP server is unavailable, this phase is skipped (**offline mode**): the scan still runs and writes to disk, and Phase 4 is skipped.
 
 1. **Phase 1 — Catalog** (`scan` orchestrator, main thread). Globs marker files (`package.json`, `pyproject.toml`, `go.mod`, `pubspec.yaml`, `docker-compose.yml`, …) under `scan_dir` at depth 1–3, skipping a blacklist (`node_modules`, `.venv`, `dist`, `.quasar-graph`, …). Writes the manifest to `<cwd>/.quasar-graph/<session_id>/manifest.json` (output lives under the current working directory, NOT inside `scan_dir`) with each project as `status: pending`. Ends with a **deep-scan approval gate**: Phase 2 starts only after the user explicitly approves the cataloged list (projects **and** environments) — the user adjusts exclusions over as many rounds as needed first; excluded entries get `status: skipped` in the manifest and are never analyzed, never produce a node/`.md`, and are not flagged by the Phase 3.5 "missing project" check.
 
@@ -67,7 +67,7 @@ Body requires a `# <name>` heading + 1–3 sentence description, and a `## Resou
 
 # Reference documents
 
-`docs/Setup.md` — building and releasing the bundled MCP server.
+`mcp/README.md` — the bundled MCP server: tools, configuration, release flow, backend contract.
 `docs/superpowers/` — historical design plans/specs for past features (context, not current contracts).
 `references/` — per-harness tool mappings for the skills' action vocabulary; its `README.md` documents how to port the skills to a new harness.
 
