@@ -1,7 +1,7 @@
 {
   "name": "quasar-graph",
-  "version": "1.0.0",
-  "description": "Scan a directory of projects, build a quasar-graph manifest, and upload the resulting graph to the quasar-graph backend.",
+  "version": "1.0.1",
+  "description": "Maps your projects into a living architecture graph: scan a directory of repos, sync the graph to the quasar-graph backend, then use it as a map — graph-aware context, cross-repo research, one-command stack cloning, and in-place graph editing.",
   "author": {
     "name": "Oleksandr Samoilov",
     "url": "https://github.com/o-samoilov"

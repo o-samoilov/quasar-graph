@@ -42,7 +42,7 @@ Editing rules:
 - **Removing a node:** also remove every edge that references its id.
 - **Renaming a node (or changing its type)** is safe here: its `position`, `agentContext`, and `links` travel with the JSON object onto the new deterministic id.
 - Never introduce two nodes with the same `(type, name)` — they would collapse into one id; `push_graph` rejects the file.
-- **Scan-owned fields** (`description`, `projectPath`, `repoUrl`, graph-level `scanPath`) are legal to edit but the next scan of this graph will refresh them. **Graph-owned fields** (`position`, `agentContext`, `links`) persist across re-scans. Mention this once when the user first edits a scan-owned field.
+- **Scan-owned fields** (`description`, `projectPath`, `repoUrl`, graph-level `scanPath`) are legal to edit but the next scan of this graph will refresh them. **Graph-owned fields** (`position`, `agentContext`) persist across re-scans. **`links` sit in between** — the next scan merges them by URL: a link added here survives, but an edit to a link whose URL the scan produces itself (e.g. the `Admin Panel` link from a resource's `admin_url`) is overwritten by the fresh value. Mention this once when the user first edits a scan-owned field.
 
 ## Phase 3 — Confirm and push
 

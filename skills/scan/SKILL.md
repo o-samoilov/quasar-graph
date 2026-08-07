@@ -33,7 +33,7 @@ The scan **output** is always written under the current working directory (`cwd`
 
 Read `references/conventions.md` at the quasar-graph plugin root before acting. It defines the **action vocabulary** this skill is written in (dispatch a sub-agent, load a skill, selection prompt, …) with its per-harness degradations, the **selection UI** rules, and the **login retry flow**.
 
-Fixed choices in this skill that always use a selection prompt: the session choice (Session step — `New session` plus the existing sessions, so it follows the bounded-list rule: options if the total is ≤ 4, numbered table otherwise), new-vs-existing graph (Phase 0), the Phase 1 working-copy refresh offer (`update all projects` / `scan as-is` — see Phase 1 step 8c), the Phase 1 deep-scan approval gate (`start deep scan` / `adjust the list`; its adjust sub-prompt is multi-select over the cataloged entries when they fit, numbered-table fallback otherwise — see Phase 1 step 9), and the Phase 3.5 gate (`fix first` / `upload as-is`) — recommended/default option first. An empty backend list means report and stop (Phase 0 handles the empty-projects case); free-form inputs (`scan_dir`, the new graph's name) stay plain text.
+Fixed choices in this skill that always use a selection prompt: the session choice (Session step — `New session` plus the existing sessions, so it follows the bounded-list rule: options if the total is ≤ 4, numbered table otherwise), new-vs-existing graph (Phase 0), the Phase 1 working-copy refresh offer (`update all projects` / `scan as-is` — see Phase 1 step 10), the Phase 1 deep-scan approval gate (`start deep scan` / `adjust the list`; its adjust sub-prompt is multi-select over the cataloged entries when they fit, numbered-table fallback otherwise — see Phase 1 step 11), and the Phase 3.5 gate (`fix first` / `upload as-is`) — recommended/default option first. An empty backend list means report and stop (except the Phase 0 empty-projects case, which falls through to creating a project); free-form inputs (`scan_dir`, the new graph's name, a new project's name) stay plain text.
 
 ## Session
 
@@ -54,7 +54,7 @@ Fixed choices in this skill that always use a selection prompt: the session choi
 
 ## Phase 0 — Backend binding
 
-**Goal:** choose the backend project and graph this scan targets, record them in `manifest.backend`, and (for an existing graph) download it into the session so graph-owned per-node fields (`position`; future `agent.md`) survive the re-scan.
+**Goal:** choose the backend project and graph this scan targets, record them in `manifest.backend`, and (for an existing graph) download it into the session so graph-owned per-node fields (`position`, `agentContext`) survive the re-scan.
 
 This runs in the main thread via the bundled `quasar-graph` MCP server.
 
@@ -65,7 +65,7 @@ This runs in the main thread via the bundled `quasar-graph` MCP server.
    `Skipping backend binding: quasar-graph MCP server unavailable. The scan will run offline and write to <session_dir>; upload is skipped.`
    Then proceed to Phase 1 in **offline mode** (no `backend` block; Phase 4 will be skipped).
 3. **Authentication.** If any backend tool call in this phase fails with `Not authenticated with the quasar-graph backend`, this is NOT the offline case — do not fall back to offline mode. Run the login retry flow from the conventions file; if the retry still fails with the same error, report it and offer offline mode explicitly.
-4. Call `list_workspaces` and `list_projects`. Ask which project to scan into using the selection UI rules (picker if ≤ 4, else numbered table; incl. workspace labeling). If the list is empty, report that the user must create a project on the backend first, then stop. Capture `project_id` + `project_name`.
+4. Call `list_workspaces` and `list_projects`. Ask which project to scan into using the selection UI rules (picker if ≤ 4, else numbered table; incl. workspace labeling), adding a final `Create new project` option. If the list is empty, skip straight to creation — there is nothing to choose. To create: ask for the project name (plain text), then call `create_project` with `name` and — when the user has more than one workspace — the `workspace_id` chosen with the selection UI from the `list_workspaces` result already in hand (single workspace → omit `workspace_id`, the tool resolves it). Capture `project_id` + `project_name` from the chosen or created project.
 5. Ask the user with the picker: **new graph or existing graph?**
    - **existing:** call `list_graphs` with `project_id` to list only that project's graphs. Ask which to use the same way (picker if ≤ 4, else numbered table); show `name / nodes_count / scanned_at` per option. If the list is empty, say so and fall back to creating a new graph. Capture `graph_id` + `graph_name`. Then call `pull_graph` with `session_dir` + `graph_id` — it writes only `graph/graph.json` (the full snapshot). Set `mode: existing`.
    - **new:** ask the user for a graph name, offering the chosen `project_name` as the default (`scan_dir` is not known yet, so a directory-derived name cannot be offered). Call `create_graph` with `project_id` + `name`. Capture the returned `graph_id`. Set `mode: new` (no seed files).
@@ -134,14 +134,14 @@ This runs in the main thread via the bundled `quasar-graph` MCP server.
    - `framework` — quick guess from top-level deps or files (best effort; analyzer will refine). A plain static site may have no framework — omit it.
    - `status` — `pending`.
 
-8b. **Classify each discovered directory as a `project` or an `environment`.** An **environment** is a deployment/infrastructure descriptor — it describes *how the other projects run* rather than being an app itself. It is **NOT a graph node**; it is a source of self-hosted resources and deployment topology. Signals (any is sufficient):
+8. **Classify each discovered directory as a `project` or an `environment`.** An **environment** is a deployment/infrastructure descriptor — it describes *how the other projects run* rather than being an app itself. It is **NOT a graph node**; it is a source of self-hosted resources and deployment topology. Signals (any is sufficient):
    - its only marker is `docker-compose*.yml` plus infra config (`traefik/`, `nginx*/`, monitoring config, k8s/helm manifests, `Makefile`) and it has **no application package manifest of its own** (no root `package.json` / `composer.json` / `pyproject.toml` / `go.mod` / … describing an app);
    - it lives under a grouping path named `devops` / `infra` / `deploy` / `deployment` / `environment` / `ops`;
    - the user explicitly designated it as a deployment/config directory.
 
    When genuinely unsure, prefer `project` (better a node than a silent miss). Put `project`-classified entries in `projects[]` and `environment`-classified entries in `environments[]` (same derived fields). Environments are analyzed in Phase 2 but produce **no project/service node and no edges from themselves** — only resources (Phase 3) and graph context.
 
-8. Write the catalog into `<session_dir>/manifest.json`. **Preserve any existing `backend` block** written by Phase 0 — add/replace only the `projects` and `environments` arrays:
+9. Write the catalog into `<session_dir>/manifest.json`. **Preserve any existing `backend` block** written by Phase 0 — add/replace only the `projects` and `environments` arrays:
 
    ```json
    {
@@ -174,7 +174,7 @@ This runs in the main thread via the bundled `quasar-graph` MCP server.
 
    (The `backend` block is omitted entirely in offline mode. Omit `environments` if none were found.)
 
-8c. **Offer to refresh the working copies.** A scan reads whatever is checked out, so a stale feature branch or an old checkout silently skews the graph. After the catalog is written and **before** the approval gate, ask with a selection prompt whether to update all cataloged entries first: **update all projects** (default) or **scan as-is**. Skip the prompt when no cataloged entry is a git repo.
+10. **Offer to refresh the working copies.** A scan reads whatever is checked out, so a stale feature branch or an old checkout silently skews the graph. After the catalog is written and **before** the approval gate, ask with a selection prompt whether to update all cataloged entries first: **update all projects** (default) or **scan as-is**. Skip the prompt when no cataloged entry is a git repo.
 
     On **update all projects**, for each entry with a `repo_url`, run shell commands (orchestrator, main thread) in this order and never interactively:
 
@@ -185,16 +185,16 @@ This runs in the main thread via the bundled `quasar-graph` MCP server.
 
     Report a per-entry summary (`updated <branch>` / `skipped — uncommitted changes` / `failed — <reason>`) and name the skipped ones explicitly, so the user knows which entries are being scanned from an unrefreshed checkout. Failures never abort the scan — the scan continues with whatever is on disk. Then continue to the approval gate.
 
-9. **Deep-scan approval gate.** Not every cataloged entry deserves deep analysis — the user drops the irrelevant ones (archived repos, throwaway experiments, forks) here, before any sub-agent is dispatched. Phase 2 MUST NOT start without an explicit approval: the gate is a loop the user exits only by approving the list.
+11. **Deep-scan approval gate.** Not every cataloged entry deserves deep analysis — the user drops the irrelevant ones (archived repos, throwaway experiments, forks) here, before any sub-agent is dispatched. Phase 2 MUST NOT start without an explicit approval: the gate is a loop the user exits only by approving the list.
 
     1. Present the current list of discovered **projects and environments** (name, path, lang/framework), marking any entry already excluded.
     2. Ask with a selection prompt: **start deep scan** (approve the list as shown — the default, first option) or **adjust the list**.
-    3. On **adjust the list**: ask which entries to toggle — exclude kept ones or bring excluded ones back (**≤ 4 entries** → a multi-select selection prompt, label = name, description = path + lang/framework, currently-kept entries selected; **> 4 entries** → a numbered markdown table, the user types the numbers to toggle). Apply the changes by editing `manifest.json` (orchestrator, main thread): excluded → `status: "skipped"`, re-included → `status: "pending"`. Then return to step 9.1 with the updated list — the user adjusts over as many rounds as needed.
-    4. Only on **start deep scan** proceed to step 10.
+    3. On **adjust the list**: ask which entries to toggle — exclude kept ones or bring excluded ones back (**≤ 4 entries** → a multi-select selection prompt, label = name, description = path + lang/framework, currently-kept entries selected; **> 4 entries** → a numbered markdown table, the user types the numbers to toggle). Apply the changes by editing `manifest.json` (orchestrator, main thread): excluded → `status: "skipped"`, re-included → `status: "pending"`. Then return to step 11.1 with the updated list — the user adjusts over as many rounds as needed.
+    4. Only on **start deep scan** proceed to step 12.
 
     `status` values: `pending | done | skipped`; after the gate, `skipped` is terminal for resume purposes (only a manual edit back to `pending` revives the entry), and a skipped entry never produces a node, an `.md` file, or a `scan/` folder. The entry stays in the manifest as a record of the decision, so a resume does not re-ask and Phase 3.5 knows the exclusion was deliberate.
 
-10. Report to user: `Catalog done: <N> projects + <E> environments (<K> skipped) at <session_dir>/manifest.json.` Then proceed to Phase 2.
+12. Report to user: `Catalog done: <N> projects + <E> environments (<K> skipped) at <session_dir>/manifest.json.` Then proceed to Phase 2.
 
 ## Phase 2 — Deep analysis
 
@@ -374,7 +374,7 @@ The orchestrator dispatches **one** review sub-agent in the main thread, then pr
        - **Likely duplicate resources** — separate resource files that appear to be the same backing host/service (same hostname, or one internal + one public route to the same thing) and should have been merged; OR a single resource that merged two genuinely different hosts.
        - **Misclassification** — a self-hosted-looking host (`.local`, bare hostname, private IP, compose service) filed under `third-party/`, or a clear SaaS filed under `resources/`.
        - **Orphans** — a project node with no connections and no resources (informational, not necessarily wrong).
-       - **Missing project (catalog gap)** — a project that exists but was never cataloged, so it has no node. Two strong signals: (a) a **deployment reference** — a compose `services:` entry, a deployed `image:` name, a Traefik `Host(...)` router, or an nginx upstream (typically inside a devops project) that names an app (e.g. `acme-site`, `*-web`, `*-site`) for which **no project node exists**; and (b) a **directory under `manifest.scan_dir`** (at depth 1–3, skipping the step-7 blacklist) that looks like a project — it contains `.git/`, or a `package.json` / `index.html` / `Dockerfile` — but whose name is **absent from `manifest.projects`**. Marker-less static sites are the classic miss. Report these as `warning` with the concrete directory path and the suggested project name; the fix is to re-run the scan after adding the project (Phase 1 Pass 2 should now catch git repos), or catalog it manually. EXCEPTION: a manifest entry with `status: "skipped"` was deliberately excluded by the user at the Phase 1 approval gate — do NOT flag its directory as a missing project; at most list skipped entries once as `info`.
+       - **Missing project (catalog gap)** — a project that exists but was never cataloged, so it has no node. Two strong signals: (a) a **deployment reference** — a compose `services:` entry, a deployed `image:` name, a Traefik `Host(...)` router, or an nginx upstream (typically inside a devops project) that names an app (e.g. `acme-site`, `*-web`, `*-site`) for which **no project node exists**; and (b) a **directory under `manifest.scan_dir`** (at depth 1–3, skipping the step-6 blacklist) that looks like a project — it contains `.git/`, or a `package.json` / `index.html` / `Dockerfile` — but whose name is **absent from `manifest.projects`**. Marker-less static sites are the classic miss. Report these as `warning` with the concrete directory path and the suggested project name; the fix is to re-run the scan after adding the project (Phase 1 Pass 2 should now catch git repos), or catalog it manually. EXCEPTION: a manifest entry with `status: "skipped"` was deliberately excluded by the user at the Phase 1 approval gate — do NOT flag its directory as a missing project; at most list skipped entries once as `info`.
        - **Diff vs. current backend graph** — if `manifest.json` has a `backend` block, call the MCP tool `get_graph` with its `graph_id` and compare the result against the assembled `graph/graph.json`: summarize project/resource nodes that are newly added, and nodes present on the backend but absent from the assembled snapshot — those will be REMOVED by the full-replace upload, so name them explicitly. If the `get_graph` tool is unavailable in your environment, skip this check and say so. This is informational context for the user, not necessarily a mistake.
 
        Return a markdown report grouped by severity: `error` (almost certainly wrong), `warning` (likely wrong, review), `info` (worth a glance). For each finding give: the file(s) involved, what's wrong, and the concrete fix. If nothing is found, say so explicitly. Do not fabricate findings — only report what the files actually show.
@@ -407,4 +407,4 @@ The orchestrator does this in the main thread after the user confirms the Phase 
 
 4. On error (network, backend unreachable, validation 422), report the returned error message and remind the user the scan output is preserved at `<session_dir>` and the upload can be retried by re-running Phase 4.
 
-> **Note:** node/edge identity is stable (deterministic UUIDv5), so re-scanning reuses the same ids. Graph-owned fields preserved across re-scans: `position` and `agentContext`, materialized into per-folder `manifest.json` files and applied into the snapshot by `build_graph` in Phase 3. Scan-owned fields (`description`, `repoUrl`, `projectPath`, `data`, `links`) are refreshed on every node, but a value the fresh scan could not produce is backfilled from the previous snapshot (fill-missing; stale values are removed via `/quasar-graph:edit`). A reclassified node gets a new id, so nothing carries over to it.
+> **Note:** node/edge identity is stable (deterministic UUIDv5), so re-scanning reuses the same ids. Graph-owned fields preserved across re-scans: `position` and `agentContext`, materialized into per-folder `manifest.json` files and applied into the snapshot by `build_graph` in Phase 3. Scan-owned fields (`description`, `repoUrl`, `projectPath`, `data`) are refreshed on every node, but a value the fresh scan could not produce is backfilled from the previous snapshot (fill-missing; stale values are removed via `/quasar-graph:edit`); `links` are merged by URL — the fresh link wins per URL, previous links with other URLs are inherited. A reclassified node gets a new id, so nothing carries over to it.
