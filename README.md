@@ -38,17 +38,17 @@ Once a graph exists, the plugin uses it as a *map of your codebase*: answer cros
 /plugin install quasar-graph@quasar-graph
 ```
 
-Requires Claude Code and Node.js ≥ 20 for the bundled MCP server (a committed esbuild bundle — no `npm install`, no configuration). The first backend call opens your browser to sign in with your [quasar-graph.com](https://quasar-graph.com) account. Every skill that talks to the backend needs the server; only `scan` can run without it, keeping its result on disk for a later upload. Details: [installation docs](https://quasar-graph.com/docs/getting-started/install-mcp-plugin).
+Requires Claude Code and Node.js ≥ 20 for the bundled MCP server. The first backend call opens your browser to sign in with your [quasar-graph.com](https://quasar-graph.com) account. Every skill that talks to the backend needs the server; only `scan` can run without it, keeping its result on disk for a later upload. Details: [installation docs](https://quasar-graph.com/docs/getting-started/install-mcp-plugin).
 
 ## Skills
 
 | Command<img width="250" height="1" alt="" /> | What it does |
 |----------------------------------------------| --- |
-| `/quasar-graph:scan`                         | Scan a directory of projects and build/update a graph: catalog → deep analysis (parallel sub-agents) → resource aggregation → pre-upload review → upload. |
-| `/quasar-graph:context`                      | Bind the **current working project** to its graph node (matched by git remote), then answer structural questions from the graph — who calls this service, what does it depend on, what routes traffic to it — and, with confirmation, look into dependent projects' code. |
-| `/quasar-graph:research`                     | Graph-guided, read-only **code search across projects**: scope relevant nodes from the graph, auto-clone missing repos, dispatch per-project research sub-agents, and synthesize an answer with `file:line` references. |
-| `/quasar-graph:clone`                        | Clone (and optionally install) all projects of a graph onto the local machine, with a deterministic clone plan (target paths, ssh/https, monorepo dedup). |
-| `/quasar-graph:edit`                         | Edit an existing graph **without re-scanning**: pull the full snapshot, change positions, descriptions, agent context, nodes and edges in conversation, review a change summary, and push it back (full replace). |
+| [`/quasar-graph:scan`](https://quasar-graph.com/docs/agent-skills/scan) | Scan a directory of projects and build/update a graph: catalog → deep analysis (parallel sub-agents) → resource aggregation → pre-upload review → upload. |
+| [`/quasar-graph:context`](https://quasar-graph.com/docs/agent-skills/context) | Bind the **current working project** to its graph node (matched by git remote), then answer structural questions from the graph — who calls this service, what does it depend on, what routes traffic to it — and, with confirmation, look into dependent projects' code. |
+| [`/quasar-graph:research`](https://quasar-graph.com/docs/agent-skills/research) | Graph-guided, read-only **code search across projects**: scope relevant nodes from the graph, auto-clone missing repos, dispatch per-project research sub-agents, and synthesize an answer with `file:line` references. |
+| [`/quasar-graph:clone`](https://quasar-graph.com/docs/agent-skills/clone) | Clone (and optionally install) all projects of a graph onto the local machine, with a deterministic clone plan (target paths, ssh/https, monorepo dedup). |
+| [`/quasar-graph:edit`](https://quasar-graph.com/docs/agent-skills/edit) | Edit an existing graph **without re-scanning**: pull the full snapshot, change positions, descriptions, agent context, nodes and edges in conversation, review a change summary, and push it back (full replace). |
 
 Three internal skills (`analyze-project`, `research-project`, `install-project`) are dispatched by the orchestrators via sub-agents and are not meant to be invoked directly.
 
