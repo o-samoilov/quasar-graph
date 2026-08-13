@@ -42,7 +42,7 @@ Requires Claude Code and Node.js ≥ 20 for the bundled MCP server (a committed 
 
 ## Skills
 
-| Command<img width="150" height="1" alt="" /> | What it does |
+| Command<img width="200" height="1" alt="" /> | What it does |
 |----------------------------------------------| --- |
 | `/quasar-graph:scan`                         | Scan a directory of projects and build/update a graph: catalog → deep analysis (parallel sub-agents) → resource aggregation → pre-upload review → upload. |
 | `/quasar-graph:context`                      | Bind the **current working project** to its graph node (matched by git remote), then answer structural questions from the graph — who calls this service, what does it depend on, what routes traffic to it — and, with confirmation, look into dependent projects' code. |
